@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<div style="margin-bottom: 20px">
+    <label for="sets">Current Set: </label>
+    <select id="sets">
+        <option value="null"></option>
+    </select>
+
+    <button onclick="checkSet()" id="getCards">get cards</button>
+</div>
+
+<div id="images"></div>
+
+<script>
+    const datalist = document.getElementById('sets');
+    const getCardsButton = document.getElementById('getCards');
+    const cardImages = document.getElementById('images');
+
+    getSets();
+
+    async function getSets() {
+        const url = 'https://api.scryfall.com/sets';
+        let json = await fetchData(url);
+
+        if (!json) {
+            throw new Error('Failed to receive sets.');
+        }
+
+        populateList(json.data);
+    }
+
+    function populateList(sets) {
+        sets.forEach(set => {
+            const option = document.createElement("option");
+            option.innerHTML = set.name;
+            option.value = set.code;
+            datalist.appendChild(option);
+        });
+    }
+
+    async function checkSet() {
+        const currentSet = document.getElementById('sets').value;
+        console.debug(currentSet);
+
+        if (currentSet === 'null') {
+            throw new Error('No set selected.');
+        }
+
+        const url = `http://127.0.0.1:5000/setExists/${currentSet}`;
+        const setExists = await fetchData(url);
+        console.log(setExists);
+
+        if (setExists.exists) {
+            // loadSet(currentSet);
+        } else {
+            await saveSet(currentSet);
+            // loadSet(currentSet);
+            // getSetInfo(currentSet);
+        }
+    }
+
+    async function loadSet(set) {
+        const url = `http://127.0.0.1:5000/loadSet/${set}`
+        const json = await fetchData(url);
+
+        if (!json) {
+            throw new Error('Failed to save set.');
+        }
+    }
+
+    async function saveSet(set) {
+        const url = `http://127.0.0.1:5000/saveSet/${set}`
+        const json = await fetchData(url);
+
+        if (!json) {
+            throw new Error('Failed to save set.');
+        }
+    }
+
+
+    function populateImages(cards) {
+        let images = [];
+
+        cards.forEach(image => {
+            const img = document.createElement('img');
+            img.setAttribute('src', image.image_uris.normal);
+            images.push(img);
+        });
+        cardImages.replaceChildren(...images);
+    }
+
+    async function fetchData(url) {
+        try {
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error(error.message);
+        }
+    }
+</script>
+</body>
+</html>
